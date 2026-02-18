@@ -1,0 +1,25 @@
+packages = []
+
+[tool.poetry]
+name = "order-payment-service"
+version = "0.1.0"
+description = "HTTP Order and Payment Service example"
+authors = ["Artem Rdt <arrdt11@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.110.0"
+uvicorn = "^0.27.0"
+requests = "^2.31.0"
+httpx = "^0.28.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
