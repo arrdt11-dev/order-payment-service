@@ -1,5 +1,3 @@
-import pika
-import json
 from fastapi import FastAPI
 from pydantic import BaseModel
 import httpx
@@ -52,42 +50,3 @@ async def create_order(request: OrderRequest):
     
     orders[order_id] = new_order
     return new_order
-
-
-
-@app.post("/orders_mq")
-async def create_order_mq(request: OrderRequest):
-    global order_counter
-    
-    order_id = order_counter
-    order_counter += 1
-    
-    # Создаем запись о заказе в словаре (как раньше)
-    order = {
-        "id": order_id,
-        "user_id": request.user_id,
-        "amount": request.amount,
-        "status": "sent_to_queue" # Специальный статус
-    }
-    orders[order_id] = order
-    
-    # --- ОТПРАВКА В RABBITMQ ---
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-    channel = connection.channel()
-    channel.queue_declare(queue='order_queue')
-    
-    # Подготавливаем сообщение
-    message = json.dumps({
-        "order_id": order_id, 
-        "amount": request.amount
-    })
-    
-    # Кидаем в очередь
-    channel.basic_publish(
-        exchange='', 
-        routing_key='order_queue', 
-        body=message
-    )
-    connection.close()
-    
-    return {"status": "accepted", "order_id": order_id, "info": "Заказ отправлен в очередь RabbitMQ"}
