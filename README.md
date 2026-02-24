@@ -1,98 +1,116 @@
-# Order Payment Service
 
-Микросервисное приложение, состоящее из двух сервисов:
-
-- Order Service — создаёт и хранит заказы
-- Payment Service — обрабатывает оплату
-
-Взаимодействие реализовано через HTTP и RabbitMQ.  
-Проект использует FastAPI и Poetry.
+Реализовано:
+- FastAPI
+- HTTP взаимодействие между сервисами
+- Event-driven взаимодействие через RabbitMQ
+- Poetry для управления зависимостями
+- хранение заказов в памяти
 
 ---
 
 # Установка
 
-Клонировать репозиторий:
+Установить Poetry:
 
-git clone https://github.com/arrdt11-dev/order-payment-service.git
-cd order-payment-service
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
 
-Установить зависимости через Poetry:
+Установить зависимости:
 
+```bash
 poetry install
-
-Запуск команд через Poetry:
-
-poetry run <command>
+```
 
 ---
 
-# Запуск сервисов (HTTP)
+# Запуск RabbitMQ
 
-## Запуск Payment Service
+Ubuntu:
 
-poetry run uvicorn payment_service.http_app:app --port 8001 --reload
+```bash
+sudo apt install rabbitmq-server -y
+sudo systemctl start rabbitmq-server
+```
 
-## Запуск Order Service
+проверка:
+
+```bash
+sudo systemctl status rabbitmq-server
+```
+
+---
+
+# Запуск Payment Service consumer
+
+```bash
+poetry run python payment_service/mq_consumer.py
+```
+
+---
+
+# Запуск Payment Service HTTP
 
 в новом терминале:
 
-poetry run uvicorn order_service.http_app:app --port 8000 --reload
+```bash
+poetry run uvicorn payment_service.http_app:app --host 0.0.0.0 --port 8001
+```
 
 ---
 
-# Использование API
+# Запуск Order Service
 
-Документация доступна после запуска:
+в новом терминале:
 
-http://127.0.0.1:8000/docs
+```bash
+poetry run uvicorn order_service.http_app:app --host 0.0.0.0 --port 8000
+```
 
 ---
 
-## Создать заказ
+# Использование
+
+Swagger Order Service:
+
+```
+http://localhost:8000/docs
+```
+
+создание заказа:
 
 POST /orders
 
-пример body:
+пример:
 
+```json
 {
   "user_id": 1,
   "amount": 100
 }
+```
+
+если amount > 0 → status = paid  
+если amount = 0 → status = failed  
 
 ---
 
-## Получить заказ
+# Event-driven flow
 
-GET /orders/{id}
+Order Service:
+- создаёт заказ
+- публикует событие order_created
 
-пример:
-
-http://127.0.0.1:8000/orders/1
-
----
-
-# RabbitMQ (event-driven)
-
-Запуск RabbitMQ через Docker:
-
-docker run -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-
-Запуск consumer:
-
-poetry run python payment_service/mq_consumer.py
+Payment Service:
+- читает событие
+- обрабатывает оплату
+- выводит результат
 
 ---
 
-# Технологии
+# Стек
 
-Python  
-FastAPI  
-RabbitMQ  
-Poetry  
-Docker  
-
----
-
-#
-https://github.com/arrdt11-dev/order-payment-service
+- Python
+- FastAPI
+- RabbitMQ
+- Poetry
