@@ -1,22 +1,30 @@
-import pika
 import json
-import time
+import pika
 
-# Подключаемся к RabbitMQ
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+def callback(ch, method, properties, body):
+    order = json.loads(body)
+
+    print("Received order:", order)
+
+    if order["amount"] > 0:
+        status = "paid"
+    else:
+        status = "failed"
+
+    print(f"Payment result: {status}")
+
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host="localhost")
+)
+
 channel = connection.channel()
-channel.queue_declare(queue='order_queue')
+channel.queue_declare(queue="order_created")
 
-def process_order(ch, method, properties, body):
-    data = json.loads(body)
-    print(f" [MQ] Получен заказ {data['order_id']} на сумму {data['amount']}")
-    
-    # Имитация работы
-    time.sleep(2)
-    
-    status = "success" if data['amount'] > 0 else "failed"
-    print(f" [MQ] Результат оплаты для заказа {data['order_id']}: {status}")
+channel.basic_consume(
+    queue="order_created",
+    on_message_callback=callback,
+    auto_ack=True
+)
 
-channel.basic_consume(queue='order_queue', on_message_callback=process_order, auto_a>
-print(' [*] Ожидание сообщений из RabbitMQ. Нажми CTRL+C для выхода')
+print("Waiting for orders...")
 channel.start_consuming()

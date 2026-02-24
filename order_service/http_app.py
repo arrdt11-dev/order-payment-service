@@ -2,6 +2,7 @@ import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from order_service.storage import orders
+from order_service.mq_producer import publish_order_created
 
 app = FastAPI()
 
@@ -23,6 +24,10 @@ def create_order(order_request: OrderRequest):
         "status": "created"
     }
 
+    # отправляем событие в RabbitMQ
+    publish_order_created(orders[order_id])
+
+    # HTTP вызов Payment Service (можно оставить)
     response = requests.post(
         "http://127.0.0.1:8001/pay",
         json={
